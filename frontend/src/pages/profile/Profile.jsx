@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { logout, deleteAccountThunk } from '../../features/user/userSlice';
+import { deleteAccountThunk, updateProfileThunk } from '../../features/user/userThunks';
+import { logout } from '../../features/user/userSlice'
 import { useNavigate } from 'react-router-dom';
+import ConfirmModal from '../../components/modal/confirmModal';
+import SuccessModal from '../../components/modal/SuccessModal';
+
 
 export default function Profile() {
   const dispatch = useDispatch();
@@ -12,10 +16,32 @@ export default function Profile() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const storedUser = localStorage.getItem('userInfo');
   const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-  const user = parsedUser ? parsedUser.user : null;
+  const user = parsedUser?.user || null;
+
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [location, setLocation] = useState(user?.location || '');
+  const [bio, setBio] = useState(user?.bio || '');
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(user?.profileImage || '');
+
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+      setLocation(user.location || '');
+      setBio(user.bio || '');
+      setProfileImagePreview(user.profileImage || '');
+    }
+  }, [user]);
 
   if (!user) {
     return (
@@ -30,24 +56,58 @@ export default function Profile() {
     setTimeout(() => {
       dispatch(logout());
       navigate('/signin');
-    }, 1500); // mimic logout delay
+    }, 1500);
   };
 
+  const handleImageClick = () => {
+    fileInputRef.current.click();
+  };
 
-  const confirmDelete = async () => {
-    setLoading(true);
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(file);
+      setProfileImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+const confirmDelete = async () => {
+  setLoading(true);
+  try {
+    await dispatch(deleteAccountThunk()).unwrap();
+    setShowConfirmModal(false);
+    setShowSuccessModal(true);
+    // Remove the auto logout for now or delay it
+    // setTimeout(() => {
+    //   handleLogout();
+    // }, 2000);
+  } catch (error) {
+    setShowConfirmModal(false);
+    setShowErrorModal(true);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+  const handleUpdateProfile = async () => {
+    const updatedUserData = {
+      name,
+      email,
+      phone,
+      location,
+      bio,
+      profileImage, // assuming your backend supports file uploads
+    };
+
     try {
-      await dispatch(deleteAccountThunk()).unwrap(); // use unwrap to catch errors directly
-      setShowConfirmModal(false);
-      setShowSuccessModal(true);
-      setTimeout(() => {
-        handleLogout(); // Log out after account deletion
-      }, 2000);
+      const updatedUser = await dispatch(updateProfileThunk(updatedUserData)).unwrap();
+      localStorage.setItem('userInfo', JSON.stringify({ user: updatedUser }));
+      setIsEditing(false);
     } catch (error) {
-      setShowConfirmModal(false);
-      setShowErrorModal(true);
-    } finally {
-      setLoading(false);
+      console.error('Update failed:', error);
+      alert('Profile update failed.');
     }
   };
 
@@ -57,11 +117,28 @@ export default function Profile() {
         {/* Left Panel */}
         <div className="md:w-1/3 bg-gradient-to-b from-blue-700 to-blue-900 text-white p-8 flex flex-col items-center">
           <img
-            src={user.avatar || 'https://i.pravatar.cc/150?img=15'}
-            alt="User Avatar"
-            className="w-32 h-32 rounded-full border-4 border-white shadow-lg mb-6"
+            src={profileImagePreview || 'https://i.pravatar.cc/150?img=15'}
+            alt="User Profile"
+            onClick={handleImageClick}
+            className="w-32 h-32 rounded-full border-4 border-white shadow-lg mb-6 cursor-pointer"
           />
-          <h2 className="text-2xl font-semibold">{user.name || 'Anonymous User'}</h2>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
+          {isEditing ? (
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 block text-center px-3 py-2 rounded bg-white text-blue-700 font-semibold"
+            />
+          ) : (
+            <h2 className="text-2xl font-semibold">{name}</h2>
+          )}
           <p className="text-blue-300 mt-1">{user.role || 'User'}</p>
           <p className="text-blue-200 text-sm mt-2">Joined {user.joined || 'Recently'}</p>
         </div>
@@ -69,131 +146,153 @@ export default function Profile() {
         {/* Right Panel */}
         <div className="md:w-2/3 p-8 space-y-6">
           <h3 className="text-3xl font-bold text-gray-800 mb-6">User Profile</h3>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-500">Email Address</label>
-              <p className="mt-1 text-gray-900 font-semibold">{user.email || 'N/A'}</p>
+              <label className="block text-sm font-medium text-gray-500">Name</label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 border rounded"
+                />
+              ) : (
+                <p className="mt-1 text-gray-900 font-semibold">{name}</p>
+              )}
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-500">Email Address</label>
+              {isEditing ? (
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 border rounded"
+                />
+              ) : (
+                <p className="mt-1 text-gray-900 font-semibold">{email}</p>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-500">Phone Number</label>
-              <p className="mt-1 text-gray-900 font-semibold">{user.phone || 'N/A'}</p>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 border rounded"
+                />
+              ) : (
+                <p className="mt-1 text-gray-900 font-semibold">{phone || 'N/A'}</p>
+              )}
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-500">Location</label>
-              <p className="mt-1 text-gray-900 font-semibold">{user.location || 'N/A'}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">Member Since</label>
-              <p className="mt-1 text-gray-900 font-semibold">{user.joined || 'N/A'}</p>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 border rounded"
+                />
+              ) : (
+                <p className="mt-1 text-gray-900 font-semibold">{location || 'N/A'}</p>
+              )}
             </div>
           </div>
 
+          {/* Bio */}
           <div>
             <h4 className="text-lg font-semibold text-gray-700 mb-2">About</h4>
-            <p className="text-gray-600 leading-relaxed">
-              {user.bio ||
-                `This user hasn't added a bio yet. Add one from your profile settings to tell others more about yourself.`}
-            </p>
+            {isEditing ? (
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border rounded"
+                rows="4"
+              />
+            ) : (
+              <p className="text-gray-600 leading-relaxed">
+                {bio || `This user hasn't added a bio yet.`}
+              </p>
+            )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex space-x-4 mt-8">
-            <button
-              onClick={handleLogout}
-              disabled={logoutLoading}
-              className={`px-6 py-2 rounded-lg transition text-white ${logoutLoading ? 'bg-red-400' : 'bg-red-600 hover:bg-red-700'
-                }`}
-            >
-              {logoutLoading ? (
-  <span className="flex items-center">
-    <svg className="animate-spin h-4 w-4 mr-2 text-white" viewBox="0 0 24 24">
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-        fill="none"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-      />
-    </svg>
-    Logging out...
-  </span>
-) : (
-  'Logout'
-)}
+          {/* Buttons */}
+          <div className="flex flex-col space-y-4 mt-8">
+            {isEditing ? (
+              <div className="flex space-x-4">
+                <button
+                  onClick={handleUpdateProfile}
+                  className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={() => {
+                    setName(user.name || '');
+                    setEmail(user.email || '');
+                    setPhone(user.phone || '');
+                    setLocation(user.location || '');
+                    setBio(user.bio || '');
+                    setIsEditing(false);
+                  }}
+                  className="px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Edit Profile
+              </button>
+            )}
 
-            </button>
+            <div className="flex space-x-4">
+              <button
+                onClick={handleLogout}
+                disabled={logoutLoading}
+                className={`px-6 py-2 rounded-lg text-white ${logoutLoading ? 'bg-red-400' : 'bg-red-600 hover:bg-red-700'}`}
+              >
+                {logoutLoading ? 'Logging Out...' : 'Logout'}
+              </button>
 
-            <button
-              onClick={() => setShowConfirmModal(true)}
-              disabled={loading}
-              className={`px-6 py-2 rounded-lg transition text-white ${loading ? 'bg-gray-400' : 'bg-gray-600 hover:bg-gray-700'
-                }`}
-            >
-              {loading ? 'Deleting...' : 'Delete Account'}
-            </button>
+              <button
+                onClick={() => setShowConfirmModal(true)}
+                className="px-6 py-2 rounded-lg bg-black text-white hover:bg-gray-800"
+              >
+                Delete Account
+              </button>
+            {showSuccessModal && console.log('Rendering SuccessModal')}
+<SuccessModal
+  isOpen={showSuccessModal}
+  onClose={() => {
+    setShowSuccessModal(false);
+    handleLogout();
+  }}
+  title="Account Deleted"
+  message="Your account has been deleted successfully."
+/>
+
+
+
+              <ConfirmModal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={confirmDelete}
+                message="Are you sure you want to delete your account?"
+              />
+
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Confirm Delete Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Confirm Account Deletion</h2>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete your account? This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Yes, Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center">
-            <h2 className="text-lg font-semibold text-green-700 mb-2">Account deleted successfully.</h2>
-            <p className="text-gray-600 text-sm">Redirecting you...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Error Modal */}
-      {showErrorModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center">
-            <h2 className="text-lg font-semibold text-red-700 mb-2">Error deleting account.</h2>
-            <p className="text-gray-600 text-sm">Please try again later.</p>
-            <button
-              onClick={() => setShowErrorModal(false)}
-              className="mt-4 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

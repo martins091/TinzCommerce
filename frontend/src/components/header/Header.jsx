@@ -2,18 +2,12 @@ import { useSelector, useDispatch } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { FaShoppingCart, FaUserCircle, FaBars } from 'react-icons/fa'
 import { useState } from 'react'
-import { logout } from '../../features/user/userSlice' // Adjust path accordingly
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const dispatch = useDispatch()
 
   // Select userInfo from Redux state (update path if your store key is different)
   const userInfo = useSelector((state) => state.user.userInfo)
-
-  const handleLogout = () => {
-    dispatch(logout())
-  }
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -34,8 +28,17 @@ const Header = () => {
           {userInfo ? (
             <>
               <Link to="/profile">
-                <FaUserCircle className="text-gray-700 hover:text-blue-600 text-xl" />
+                {userInfo.profileImage ? (
+                  <img
+                    src={userInfo.profileImage}
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full object-cover border border-gray-300 hover:border-blue-600"
+                  />
+                ) : (
+                  <FaUserCircle className="text-gray-700 hover:text-blue-600 text-xl" />
+                )}
               </Link>
+
             </>
           ) : (
             <Link to="/signin" className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 text-sm">
@@ -60,10 +63,18 @@ const Header = () => {
 
           {userInfo ? (
             <>
-              <Link to="/profile" className="flex items-center text-gray-700 hover:text-blue-600">
-                <FaUserCircle className="mr-2" /> Profile
+              <Link to="/profile" className="flex items-center text-gray-700 hover:text-blue-600 space-x-2">
+                {userInfo.profileImage ? (
+                  <img
+                    src={userInfo.profileImage}
+                    alt="Profile"
+                    className="w-6 h-6 rounded-full object-cover border border-gray-300"
+                  />
+                ) : (
+                  <FaUserCircle />
+                )}
+                <span>Profile</span>
               </Link>
-      
             </>
           ) : (
             <Link to="/signin" className="block bg-blue-600 text-white text-center py-2 rounded hover:bg-blue-700 text-sm">

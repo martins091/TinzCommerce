@@ -1,4 +1,5 @@
 import API from '../../services/axios'
+import { getAuthHeaders } from '../../utils/authHeader'
 
 export const register = async (userData) => {
   const response = await API.post('/users/register', userData)
@@ -25,9 +26,23 @@ export const resetPasswordWithOTP = async ({ email, otp, newPassword }) => {
   })
   return response.data
 }
-
-// Delete user account (must be authenticated)
+ 
+// deleted Account
 export const deleteAccount = async () => {
-  const response = await API.delete('/users/delete-account')
+  const headers = getAuthHeaders()
+  const response = await API.delete('/users/delete-account', { headers })
+  return response.data
+}
+
+
+// Update Profile
+export const updateProfile = async (updatedData) => {
+  const response = await API.put('/users/update-profile', updatedData)
+  return response.data
+}
+
+// Logout user
+export const logoutUser = async () => {
+  const response = await axios.post('/user/logout')
   return response.data
 }

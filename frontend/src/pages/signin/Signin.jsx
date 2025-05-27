@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { loginUser } from '../../features/user/userSlice'
+import { loginUser } from '../../features/user/userThunks'
 import SuccessModal from '../../components/modal/SuccessModal'
 import { Link, useNavigate } from 'react-router-dom'
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { requestOTPThunk } from '../../features/user/userSlice'
+import { requestOTPThunk } from '../../features/user/userThunks'
 import { useNavigate } from 'react-router-dom'
 import SuccessModal from '../../components/modal/SuccessModal'
 

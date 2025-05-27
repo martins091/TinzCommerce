@@ -1,90 +1,32 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+// src/features/user/userSlice.js
+import { createSlice } from '@reduxjs/toolkit'
 import {
-  login,
-  register,
-  requestOTP,
-  resetPasswordWithOTP,
-  deleteAccount,
-} from '../user/userAPI'
+  registerUser,
+  loginUser,
+  requestOTPThunk,
+  resetPasswordThunk,
+  deleteAccountThunk,
+  updateProfileThunk,
+} from './userThunks'
 import {
   getUserInfoFromStorage,
-  setUserInfoToStorage,
   removeUserInfoFromStorage,
+  setUserInfoToStorage,
 } from '../../utils/localStorage'
 
-// Register
-export const registerUser = createAsyncThunk(
-  'user/registerUser',
-  async (userData, thunkAPI) => {
-    try {
-      return await register(userData)
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message)
-    }
-  }
-)
-
-// Login
-export const loginUser = createAsyncThunk(
-  'user/loginUser',
-  async (credentials, thunkAPI) => {
-    try {
-      return await login(credentials)
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message)
-    }
-  }
-)
-
-// Forgot Password – request OTP
-export const requestOTPThunk = createAsyncThunk(
-  'user/requestOTP',
-  async (email, thunkAPI) => {
-    try {
-      return await requestOTP(email)
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message)
-    }
-  }
-)
-
-// Reset Password using OTP
-export const resetPasswordThunk = createAsyncThunk(
-  'user/resetPassword',
-  async ({ email, otp, newPassword }, thunkAPI) => {
-    try {
-      return await resetPasswordWithOTP({ email, otp, newPassword })
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message)
-    }
-  }
-)
-
-// Delete Account
-export const deleteAccountThunk = createAsyncThunk(
-  'user/deleteAccount',
-  async (_, thunkAPI) => {
-    try {
-      const response = await deleteAccount()
-      removeUserInfoFromStorage()
-      return response
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message)
-    }
-  }
-)
+const initialState = {
+  userInfo: getUserInfoFromStorage(),
+  loading: false,
+  error: null,
+  registrationSuccess: false,
+  otpSent: false,
+  passwordReset: false,
+  deleteSuccess: false,
+}
 
 const userSlice = createSlice({
   name: 'user',
-  initialState: {
-    userInfo: getUserInfoFromStorage(),
-    loading: false,
-    error: null,
-    registrationSuccess: false,
-    otpSent: false,
-    passwordReset: false,
-    deleteSuccess: false,
-  },
+  initialState,
   reducers: {
     logout: (state) => {
       state.userInfo = null
@@ -117,7 +59,6 @@ const userSlice = createSlice({
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
-        state.registrationSuccess = false
       })
 
       // Login
@@ -135,7 +76,7 @@ const userSlice = createSlice({
         state.error = action.payload
       })
 
-      // Forgot Password (OTP)
+      // OTP Request
       .addCase(requestOTPThunk.pending, (state) => {
         state.loading = true
         state.error = null
@@ -148,7 +89,6 @@ const userSlice = createSlice({
       .addCase(requestOTPThunk.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
-        state.otpSent = false
       })
 
       // Reset Password
@@ -164,7 +104,6 @@ const userSlice = createSlice({
       .addCase(resetPasswordThunk.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
-        state.passwordReset = false
       })
 
       // Delete Account
@@ -181,7 +120,21 @@ const userSlice = createSlice({
       .addCase(deleteAccountThunk.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
-        state.deleteSuccess = false
+      })
+
+      // Update Profile
+      .addCase(updateProfileThunk.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(updateProfileThunk.fulfilled, (state, action) => {
+        state.loading = false
+        state.userInfo = action.payload
+        setUserInfoToStorage(action.payload)
+      })
+      .addCase(updateProfileThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
       })
   },
 })

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import SuccessModal from '../../components/modal/SuccessModal'
-import { registerUser, resetRegistrationSuccess } from '../../features/user/userSlice'
+import { registerUser } from '../../features/user/userThunks'
+import { resetRegistrationSuccess } from '../../features/user/userSlice'
 import { useNavigate } from 'react-router-dom'
 
 const Signup = () => {

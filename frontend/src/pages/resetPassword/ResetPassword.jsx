@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
-import { resetPasswordThunk } from '../../features/user/userSlice'
+import { resetPasswordThunk } from '../../features/user/userThunks'
 import SuccessModal from '../../components/modal/SuccessModal'
 
 export default function ResetPassword() {
