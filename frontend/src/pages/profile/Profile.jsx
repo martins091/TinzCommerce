@@ -1,27 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { deleteAccountThunk, updateProfileThunk } from '../../features/user/userThunks';
-import { logout } from '../../features/user/userSlice'
+import { logout } from '../../features/user/userSlice';
+import { getUserInfoFromStorage, setUserInfoToStorage } from '../../utils/localStorage';
 import { useNavigate } from 'react-router-dom';
-import ConfirmModal from '../../components/modal/confirmModal';
 import SuccessModal from '../../components/modal/SuccessModal';
-
 
 export default function Profile() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showErrorModal, setShowErrorModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalMessage, setModalMessage] = useState('')
+  const [modalError, setModalError] = useState(false) 
+  const [accountUpdating, setAccountUpdating] = useState(false);
 
-  const storedUser = localStorage.getItem('userInfo');
-  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-  const user = parsedUser?.user || null;
-
+ const user = useSelector((state) => state.user.userInfo)
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
@@ -53,11 +51,13 @@ export default function Profile() {
 
   const handleLogout = () => {
     setLogoutLoading(true);
-    setTimeout(() => {
+    setTimeout(() => { 
       dispatch(logout());
       navigate('/signin');
     }, 1500);
   };
+
+
 
   const handleImageClick = () => {
     fileInputRef.current.click();
@@ -67,61 +67,87 @@ export default function Profile() {
     const file = e.target.files[0];
     if (file) {
       setProfileImage(file);
-      setProfileImagePreview(URL.createObjectURL(file));
+      setProfileImagePreview(URL.createObjectURL(file)); // <-- this line shows preview immediately
     }
   };
 
-const confirmDelete = async () => {
-  setLoading(true);
+ const closeModal = () => {
+    setModalOpen(false)
+
+    if (!modalError && user) {
+      setEmail('')
+      navigate('/signin') // redirect again just in case
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    setLoading(true);
+    try {
+      await dispatch(deleteAccountThunk()).unwrap();
+      dispatch(logout());
+      setModalMessage('Account Deleted successfully!')
+      setModalError(false)
+      setModalOpen(true)
+      navigate('/signin');
+    } catch (error) {
+      setModalMessage(typeof error === 'string' ? error : error.message || 'Sign in failed')
+      setModalError(true)
+      setModalOpen(true)
+    } finally {
+      setLoading(false);
+    }
+  };
+
+ const handleUpdateProfile = async () => {
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('email', email);
+  formData.append('phone', phone);
+  formData.append('location', location);
+  formData.append('bio', bio);
+
+  if (profileImage) {
+    formData.append('profileImage', profileImage);
+  }
+
   try {
-    await dispatch(deleteAccountThunk()).unwrap();
-    setShowConfirmModal(false);
-    setShowSuccessModal(true);
-    // Remove the auto logout for now or delay it
-    // setTimeout(() => {
-    //   handleLogout();
-    // }, 2000);
-  } catch (error) {
-    setShowConfirmModal(false);
-    setShowErrorModal(true);
-  } finally {
-    setLoading(false);
+    const updatedUser = await dispatch(updateProfileThunk(formData)).unwrap();
+    setAccountUpdating(true);
+    setUserInfoToStorage(updatedUser);
+    setIsEditing(false);
+      setModalMessage('user updated successfully!')
+      setModalError(false)
+      setModalOpen(true)
+  } catch (error) { 
+  setModalMessage(typeof error === 'string' ? error : error.message || 'Sign in failed')
+      setModalError(true)
+      setModalOpen(true)
+  }finally {
+    setAccountUpdating(false);
   }
 };
 
-
-
-  const handleUpdateProfile = async () => {
-    const updatedUserData = {
-      name,
-      email,
-      phone,
-      location,
-      bio,
-      profileImage, // assuming your backend supports file uploads
-    };
-
-    try {
-      const updatedUser = await dispatch(updateProfileThunk(updatedUserData)).unwrap();
-      localStorage.setItem('userInfo', JSON.stringify({ user: updatedUser }));
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Update failed:', error);
-      alert('Profile update failed.');
+useEffect(() => {
+  return () => {
+    if (profileImagePreview && profileImage) {
+      URL.revokeObjectURL(profileImagePreview);
     }
   };
+}, [profileImagePreview, profileImage]);
 
-  return (
+
+return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 flex items-center justify-center p-6">
       <div className="max-w-4xl w-full bg-white rounded-xl shadow-xl overflow-hidden flex flex-col md:flex-row">
         {/* Left Panel */}
         <div className="md:w-1/3 bg-gradient-to-b from-blue-700 to-blue-900 text-white p-8 flex flex-col items-center">
           <img
-            src={profileImagePreview || 'https://i.pravatar.cc/150?img=15'}
+            src={profileImagePreview || user.profileImage || 'https://i.pravatar.cc/150?img=15'}
             alt="User Profile"
             onClick={handleImageClick}
             className="w-32 h-32 rounded-full border-4 border-white shadow-lg mb-6 cursor-pointer"
           />
+
           <input
             type="file"
             accept="image/*"
@@ -229,7 +255,7 @@ const confirmDelete = async () => {
                   onClick={handleUpdateProfile}
                   className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                 >
-                  Save Changes
+                 {accountUpdating  ? 'Saving Changes...' : 'save Changes'}
                 </button>
                 <button
                   onClick={() => {
@@ -264,35 +290,22 @@ const confirmDelete = async () => {
               </button>
 
               <button
-                onClick={() => setShowConfirmModal(true)}
-                className="px-6 py-2 rounded-lg bg-black text-white hover:bg-gray-800"
+                onClick={handleDeleteAccount}
+                disabled={loading}
+                className={`px-6 py-2 rounded-lg text-white ${loading ? 'bg-black/50' : 'bg-black hover:bg-gray-800'}`}
               >
-                Delete Account
+                {loading ? 'Deleting Account...' : 'Delete Account'}
               </button>
-            {showSuccessModal && console.log('Rendering SuccessModal')}
-<SuccessModal
-  isOpen={showSuccessModal}
-  onClose={() => {
-    setShowSuccessModal(false);
-    handleLogout();
-  }}
-  title="Account Deleted"
-  message="Your account has been deleted successfully."
-/>
-
-
-
-              <ConfirmModal
-                isOpen={showConfirmModal}
-                onClose={() => setShowConfirmModal(false)}
-                onConfirm={confirmDelete}
-                message="Are you sure you want to delete your account?"
-              />
-
             </div>
           </div>
         </div>
       </div>
+        <SuccessModal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        isError={modalError}
+        message={modalMessage}
+      />
     </div>
   );
 }

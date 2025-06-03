@@ -12,7 +12,7 @@ const protect = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); 
     req.user = await User.findById(decoded.id).select('-password');
     next();
   } catch (err) {
@@ -24,9 +24,12 @@ const protect = async (req, res, next) => {
 
 
 const admin = (req, res, next) => {
-  if (req.user && req.user.isAdmin) return next();
+  if (req.user && req.user.role === 'Admin') {
+    return next();
+  }
   res.status(403).json({ message: 'Not authorized as admin' });
 };
+
 
 module.exports = { protect, admin };
  

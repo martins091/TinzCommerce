@@ -117,7 +117,7 @@ const Products = () => {
           {sortOptions.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
-        </select>
+        </select>  
       </div>
 
       {/* Products Grid */}

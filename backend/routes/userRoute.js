@@ -11,7 +11,7 @@ const { protect, admin } = require('../middleware/authMiddleware');
 const { updateUserProfile } = require('../controllers/userController');
 const { getUserProfile } = require('../controllers/userController');
 const { getAllUsers } = require('../controllers/userController');
-const upload = require('../middleware/upload');
+const upload = require('../middleware/profileImageUpload');
 
 
 const router = express.Router();

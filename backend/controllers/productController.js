@@ -1,16 +1,20 @@
 const Product = require("../models/product");
 
-
 const createProduct = async (req, res) => {
   try {
     const {
       name,
       description,
-      images,
       category,
       price,
       countInStock,
     } = req.body;
+
+    // Map the uploaded files into { public_id, url }
+    const images = req.files.map(file => ({
+      public_id: file.filename, // Cloudinary gives this as the public_id
+      url: file.path,           // Cloudinary secure URL
+    }));
 
     const product = await Product.create({
       name,
@@ -19,7 +23,7 @@ const createProduct = async (req, res) => {
       category,
       price,
       countInStock,
-      user: req.user._id, // from auth middleware
+      user: req.user._id,
     });
 
     res.status(201).json(product);

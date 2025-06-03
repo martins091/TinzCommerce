@@ -32,12 +32,25 @@ export const loginUser = createAsyncThunk(
   'user/loginUser',
   async (credentials, thunkAPI) => {
     try {
-      return await login(credentials)
+      const response = await login(credentials); // call API
+
+      // Assuming API response looks like { token, user }
+      const { token, user } = response;
+
+      // Combine user info + token
+      const userInfo = { ...user, token };
+
+      // Save to localStorage
+      setUserInfoToStorage(userInfo);
+
+      // Return combined object as fulfilled payload
+      return userInfo;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message)
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
   }
-)
+);
+
 
 // Request OTP
 export const requestOTPThunk = createAsyncThunk(

@@ -8,7 +8,7 @@ const Header = () => {
 
   // Select userInfo from Redux state (update path if your store key is different)
   const userInfo = useSelector((state) => state.user.userInfo)
-
+  const isAdmin = useSelector((state) => state.user.userInfo.role === 'Admin')
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -17,6 +17,9 @@ const Header = () => {
         </Link>
 
         <nav className="hidden md:flex items-center space-x-6">
+          {isAdmin ? (
+            <Link to="/admin/dashboard" className="text-gray-700 hover:text-blue-600">Dashboard</Link>
+          ): null}
           <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
           <Link to="/products" className="text-gray-700 hover:text-blue-600">Products</Link>
           <Link to="/about" className="text-gray-700 hover:text-blue-600">About</Link>

@@ -35,11 +35,19 @@ export const deleteAccount = async () => {
 }
 
 
-// Update Profile
 export const updateProfile = async (updatedData) => {
-  const response = await API.put('/users/update-profile', updatedData)
-  return response.data
-}
+  const headers = getAuthHeaders();
+
+  // If updatedData is FormData, don't manually set 'Content-Type'
+  if (updatedData instanceof FormData) {
+    delete headers['Content-Type']; // Let the browser/axios handle it
+  }
+
+  const response = await API.put('/users/profile-update', updatedData, { headers });
+  return response.data;
+};
+
+
 
 // Logout user
 export const logoutUser = async () => {

@@ -1,33 +1,57 @@
+
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Please add a name'],
+    required: true,
+    trim: true,
   },
+  
   email: {
     type: String,
-    required: [true, 'Please add an email'],
+    required: true,
     unique: true,
     lowercase: true,
   },
+
+  phone: {
+    type: String,
+    default: '',
+  },
+  
+  location: {
+    type: String,
+    default: '',
+  },
+  
+  bio: {
+    type: String,
+    default: '',
+  },
+  
+  profileImage: {
+    type: String, // Store URL or path to the image
+    default: 'https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?semt=ais_hybrid&w=740',
+  },
+  
+  role: {
+    type: String,
+    enum: ['User', 'Admin'],
+    default: 'User',
+  },
+  
   password: {
     type: String,
-    required: [true, 'Please add a password'],
-    minlength: 6,
+    required: true,
   },
-  profileImage: {
-    type: String,
-    default: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png', // Replace with your own default Cloudinary image
-  },
-    isAdmin: {
-        type: Boolean,
-        default: false,
-    },
-  resetPasswordToken: String,
-  resetPasswordExpire: Date,
+  
+  joined: {
+    type: Date,
+    default: Date.now,
+  }
 }, {
-  timestamps: true,
+  timestamps: true // Adds createdAt and updatedAt
 });
 
 const User = mongoose.model('User', userSchema);

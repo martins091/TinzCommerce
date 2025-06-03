@@ -24,10 +24,9 @@ exports.registerUser = async (req, res) => {
       email,
       password: hashed,
       profileImage,  
-    });    
-
+    });
     res.status(201).json({ message: 'User registered successfully', user });
-  } catch (err) {
+  } catch (err) { 
     res.status(500).json({ message: 'Server Error', error: err.message });
   }
 };
@@ -40,7 +39,7 @@ exports.loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
-    const isMatch = await comparePassword(password, user.password);
+    const isMatch = await comparePassword(password, user.password); 
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = generateToken(user._id);
@@ -52,6 +51,7 @@ exports.loginUser = async (req, res) => {
         name: user.name,
         email: user.email, 
         profileImage: user.profileImage,
+        role: user.role,
       },
       token,
     });
@@ -138,32 +138,54 @@ exports.getUserProfile = async (req, res) => {
 };
 
 
-// Update logged- in user profile
+// Update logged-in user profile
 exports.updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
+    // Update fields only if provided
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
+    user.phone = req.body.phone || user.phone;
+    user.location = req.body.location || user.location;
+    user.bio = req.body.bio || user.bio;
 
-    if (req.file) {
-      user.profileImage = req.file.path; 
-    } 
+    // Update profile image if file uploaded
+if (req.file) {
+  user.profileImage = req.file.path || req.file.url;
+}
+
 
     const updatedUser = await user.save();
 
+    // ✅ Generate new token
+    const token = generateToken(updatedUser._id);
+
+    // ✅ Send updated user info along with token
     res.status(200).json({
-      id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      profileImage: updatedUser.profileImage,
-      isAdmin: updatedUser.isAdmin,
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        location: updatedUser.location,
+        bio: updatedUser.bio,
+        profileImage: updatedUser.profileImage,
+        role: updatedUser.role,
+        joined: updatedUser.joined,
+      },
+      token,
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+
 
 // Delete logged-in user account
 exports.deleteAccount = async (req, res) => {
