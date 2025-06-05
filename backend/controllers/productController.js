@@ -1,5 +1,7 @@
 const Product = require("../models/product");
 
+
+// admin create product
 const createProduct = async (req, res) => {
   try {
     const {
@@ -32,4 +34,32 @@ const createProduct = async (req, res) => {
   }
 };
 
-module.exports = { createProduct };
+const getAllProducts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1; // default to page 1
+    const limit = 8;
+    const skip = (page - 1) * limit;
+
+    const total = await Product.countDocuments(); // total number of products
+    const products = await Product.find()
+      .sort({ createdAt: -1 }) // sort by newest first
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      success: true,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalProducts: total,
+      products,
+    });
+  } catch (error) {
+    console.error('Error getting products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while retrieving products',
+    });
+  }
+};
+
+module.exports = { createProduct, getAllProducts };

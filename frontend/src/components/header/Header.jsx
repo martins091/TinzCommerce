@@ -7,8 +7,9 @@ const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
 
   // Select userInfo from Redux state (update path if your store key is different)
-  const userInfo = useSelector((state) => state.user.userInfo)
-  const isAdmin = useSelector((state) => state.user.userInfo.role === 'Admin')
+const userInfo = useSelector((state) => state.user.userInfo);
+const isAdmin = userInfo?.role === 'Admin';
+
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -57,6 +58,9 @@ const Header = () => {
 
       {isOpen && (
         <div className="md:hidden bg-white px-4 pb-4 space-y-3 shadow-md">
+           {isAdmin ? (
+            <Link to="/admin/dashboard" className="text-gray-700 hover:text-blue-600">Dashboard</Link>
+          ): null}
           <Link to="/" className="block text-gray-700 hover:text-blue-600">Home</Link>
           <Link to="/products" className="block text-gray-700 hover:text-blue-600">Products</Link>
           <Link to="/about" className="block text-gray-700 hover:text-blue-600">About</Link>
