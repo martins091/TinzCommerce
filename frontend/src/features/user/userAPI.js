@@ -26,7 +26,7 @@ export const resetPasswordWithOTP = async ({ email, otp, newPassword }) => {
   })
   return response.data
 }
- 
+
 // deleted Account
 export const deleteAccount = async () => {
   const headers = getAuthHeaders()
@@ -51,6 +51,36 @@ export const updateProfile = async (updatedData) => {
 
 // Logout user
 export const logoutUser = async () => {
-  const response = await axios.post('/user/logout')
+  const headers = getAuthHeaders();
+  const response = await API.post('/users/logout', {}, { headers });
+  return response.data;
+};
+
+
+// ✅ NEW: Get User Profile
+export const getUserProfile = async () => {
+  const headers = getAuthHeaders()
+  const response = await API.get('/users/profile', { headers })
+  return response.data
+}
+
+// ✅ NEW: Get All Users (Admin)
+export const getAllUsers = async () => {
+  const headers = getAuthHeaders()
+  const response = await API.get('/users/admin-get-all-users', { headers })
+  return response.data
+}
+
+// ✅ NEW: Edit User Role (Admin)
+export const editUserRole = async (userId, role) => {
+  const headers = getAuthHeaders()
+  const response = await API.put(`/users/admin-edit-user-role/${userId}`, { role }, { headers })
+  return response.data
+}
+
+// ✅ NEW: Delete User by Admin
+export const deleteUserByAdmin = async (userId) => {
+  const headers = getAuthHeaders()
+  const response = await API.delete(`/users/admin-delete-user/${userId}`, { headers })
   return response.data
 }

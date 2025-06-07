@@ -7,7 +7,11 @@ import {
   resetPasswordWithOTP,
   deleteAccount,
   updateProfile,
-  logoutUser
+  logoutUser,
+  getUserProfile,
+  getAllUsers,
+  editUserRole,
+  deleteUserByAdmin
 } from './userAPI'
 
 import {
@@ -112,3 +116,54 @@ export const logoutThunk = createAsyncThunk('user/logout', async (_, thunkAPI) =
   }
 })
 
+// ✅ Get User Profile
+export const getUserProfileThunk = createAsyncThunk(
+  'user/getUserProfile',
+  async (_, thunkAPI) => {
+    try {
+      const response = await getUserProfile()
+      return response
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message)
+    }
+  }
+)
+
+// ✅ Get All Users (Admin)
+export const getAllUsersThunk = createAsyncThunk(
+  'user/getAllUsers',
+  async (_, thunkAPI) => {
+    try {
+      const response = await getAllUsers()
+      return response
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message)
+    }
+  }
+)
+
+// ✅ Edit User Role (Admin)
+export const editUserRoleThunk = createAsyncThunk(
+  'user/editUserRole',
+  async ({ userId, role }, thunkAPI) => {
+    try {
+      const response = await editUserRole(userId, role)
+      return response
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message)
+    }
+  }
+)
+
+// ✅ Delete User by Admin
+export const deleteUserByAdminThunk = createAsyncThunk(
+  'user/deleteUserByAdmin',
+  async (userId, thunkAPI) => {
+    try {
+      const response = await deleteUserByAdmin(userId)
+      return response
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message)
+    }
+  }
+)

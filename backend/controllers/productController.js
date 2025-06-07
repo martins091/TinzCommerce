@@ -1,6 +1,5 @@
 const Product = require("../models/product");
 
-
 // admin create product
 const createProduct = async (req, res) => {
   try {
@@ -12,10 +11,9 @@ const createProduct = async (req, res) => {
       countInStock,
     } = req.body;
 
-    // Map the uploaded files into { public_id, url }
     const images = req.files.map(file => ({
-      public_id: file.filename, // Cloudinary gives this as the public_id
-      url: file.path,           // Cloudinary secure URL
+      public_id: file.filename,
+      url: file.path,
     }));
 
     const product = await Product.create({
@@ -34,15 +32,16 @@ const createProduct = async (req, res) => {
   }
 };
 
+// get all products
 const getAllProducts = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1; // default to page 1
+    const page = parseInt(req.query.page) || 1;
     const limit = 8;
     const skip = (page - 1) * limit;
 
-    const total = await Product.countDocuments(); // total number of products
+    const total = await Product.countDocuments();
     const products = await Product.find()
-      .sort({ createdAt: -1 }) // sort by newest first
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
@@ -62,4 +61,66 @@ const getAllProducts = async (req, res) => {
   }
 };
 
-module.exports = { createProduct, getAllProducts };
+// update product
+const updateProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    const { name, description, category, price, countInStock } = req.body;
+
+    // Update fields
+    product.name = name || product.name;
+    product.description = description || product.description;
+    product.category = category || product.category;
+    product.price = price || product.price;
+    product.countInStock = countInStock || product.countInStock;
+
+    // Optional: update images if new files uploaded
+    if (req.files && req.files.length > 0) {
+      product.images = req.files.map(file => ({
+        public_id: file.filename,
+        url: file.path,
+      }));
+    }
+
+    const updatedProduct = await product.save();
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// delete product
+const deleteProduct = async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    res.status(200).json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getProductCount = async (req, res) => {
+  try {
+    const count = await Product.countDocuments();
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error('Product count error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = {
+  createProduct,
+  getAllProducts,
+  updateProduct,
+  deleteProduct,
+  getProductCount,
+};
+
+
+// Count total products
+

@@ -6,11 +6,14 @@ const {
   resetPassword,
   deleteAccount,
   logout,
+  getUserProfile,
+  updateUserProfile,
+  getAllUsers,
+  editUserRole,
+  deleteUserByAdmin,
+  getUserCount
 } = require('../controllers/userController');
 const { protect, admin } = require('../middleware/authMiddleware');
-const { updateUserProfile } = require('../controllers/userController');
-const { getUserProfile } = require('../controllers/userController');
-const { getAllUsers } = require('../controllers/userController');
 const upload = require('../middleware/profileImageUpload');
 
 
@@ -24,8 +27,10 @@ router.get('/profile', protect, getUserProfile);
 router.put('/profile-update', protect, upload.single('profileImage'), updateUserProfile);
 router.delete('/delete-account', protect, deleteAccount);
 router.post('/logout', logout);
-router.get('/all-users', protect, admin, getAllUsers);
+router.get('/admin-get-all-users', protect, admin, getAllUsers);
+router.put('/admin-edit-user-role/:userId', protect, admin, editUserRole);
+router.delete('/admin-delete-user/:userId', protect, admin, deleteUserByAdmin);
+router.get('/admin-get-users-count', protect, admin, getUserCount);
 
 
- 
 module.exports = router;

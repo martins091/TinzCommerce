@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/header/Header';
 import Footer from './components/footer/Footer';
+import AutoLogoutHandler from './components/AutoLogoutHandler';
 
 import Home from './pages/home/Home';
 import About from './pages/about/About';
@@ -12,17 +13,18 @@ import Signup from './pages/signup/SignUp';
 import ForgotPassword from './pages/forgotPassword/ForgotPassword';
 import ResetPassword from './pages/resetPassword/ResetPassword';
 import UnauthorizedPage from './pages/unauthorized/Unauthorized';
-
 import Profile from './pages/profile/Profile';
 import PrivateRoute from './routes/PrivateRoute';
 import AdminRoute from './routes/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard/AdminDashboard';
 import NotFound from './pages/notFound/NotFound';
-// import AdminRoute from './routes/AdminRoute'; // If you later need it
 
 function App() {
   return (
     <Router>
+      {/* ✅ Use hook-triggering component inside Router, but outside Routes */}
+      <AutoLogoutHandler />
+
       <Header />
 
       <Routes>
@@ -38,7 +40,6 @@ function App() {
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
         <Route path="*" element={<NotFound />} />
 
-
         {/* 🔐 Private Routes */}
         <Route
           path="/profile"
@@ -49,8 +50,7 @@ function App() {
           }
         />
 
-        {/* 🔐 Admin Routes (optional future use) */}
-        
+        {/* 🔐 Admin Route */}
         <Route
           path="/admin/dashboard"
           element={
@@ -59,7 +59,6 @@ function App() {
             </AdminRoute>
           }
         />
-       
       </Routes>
 
       <Footer />

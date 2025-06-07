@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { FaUsers, FaBoxOpen, FaChartLine } from 'react-icons/fa';
-// import AddProductForm from '../../components/products/ProductManagement';
 import ProductManagement from '../../components/products/ProductManagement';
 import UserManagement from '../../components/user/UserManagment';
 

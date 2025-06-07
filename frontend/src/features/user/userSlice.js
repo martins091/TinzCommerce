@@ -1,4 +1,3 @@
-// src/features/user/userSlice.js
 import { createSlice } from '@reduxjs/toolkit'
 import {
   registerUser,
@@ -7,6 +6,10 @@ import {
   resetPasswordThunk,
   deleteAccountThunk,
   updateProfileThunk,
+  getUserProfileThunk,
+  getAllUsersThunk,
+  editUserRoleThunk,
+  deleteUserByAdminThunk,
 } from './userThunks'
 import {
   getUserInfoFromStorage,
@@ -22,13 +25,14 @@ const initialState = {
   otpSent: false,
   passwordReset: false,
   deleteSuccess: false,
+  allUsers: [], // ✅ Added this
 }
 
 const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    logout: (state) => {
+    logoutUser: (state) => {
       state.userInfo = null
       removeUserInfoFromStorage()
       state.registrationSuccess = false
@@ -116,6 +120,7 @@ const userSlice = createSlice({
         state.loading = false
         state.userInfo = null
         state.deleteSuccess = true
+        removeUserInfoFromStorage()
       })
       .addCase(deleteAccountThunk.rejected, (state, action) => {
         state.loading = false
@@ -131,13 +136,88 @@ const userSlice = createSlice({
         state.loading = false
         state.userInfo = action.payload
         setUserInfoToStorage(action.payload)
+        state.error = null
       })
       .addCase(updateProfileThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+
+      // Get User Profile
+      .addCase(getUserProfileThunk.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getUserProfileThunk.fulfilled, (state, action) => {
+        state.loading = false
+        state.userInfo = {
+          ...state.userInfo,
+          ...action.payload,
+        }
+        setUserInfoToStorage(state.userInfo)
+      })
+      .addCase(getUserProfileThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+
+      // Get All Users (Admin)
+      .addCase(getAllUsersThunk.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getAllUsersThunk.fulfilled, (state, action) => {
+        state.loading = false
+        state.allUsers = action.payload
+      })
+      .addCase(getAllUsersThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+
+      // Edit User Role (Admin)
+      .addCase(editUserRoleThunk.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(editUserRoleThunk.fulfilled, (state, action) => {
+        state.loading = false
+        const updatedUser = action.payload
+        if (state.allUsers) {
+          const index = state.allUsers.findIndex(user => user._id === updatedUser._id)
+          if (index !== -1) {
+            state.allUsers[index] = updatedUser
+          }
+        }
+      })
+      .addCase(editUserRoleThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+
+      // Delete User by Admin
+      .addCase(deleteUserByAdminThunk.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(deleteUserByAdminThunk.fulfilled, (state, action) => {
+        state.loading = false
+        const deletedUserId = action.payload._id
+        if (state.allUsers) {
+          state.allUsers = state.allUsers.filter(user => user._id !== deletedUserId)
+        }
+      })
+      .addCase(deleteUserByAdminThunk.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })
   },
 })
 
-export const { logout, resetRegistrationSuccess, clearResetFlags } = userSlice.actions
+export const {
+  logoutUser,
+  resetRegistrationSuccess,
+  clearResetFlags,
+} = userSlice.actions
+
 export default userSlice.reducer

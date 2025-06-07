@@ -1,7 +1,9 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import {
   createProduct,
-  getAllProducts
+  getAllProducts,
+  updateProduct,
+  deleteProduct,
 } from "./productAPI";
 
 // Create Product
@@ -27,6 +29,31 @@ export const getAllProductsThunk = createAsyncThunk(
       const message =
         error.response?.data?.message || error.message || "Something went wrong";
       return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+
+// Update Product
+export const updateProductThunk = createAsyncThunk(
+  "product/updateProduct",
+  async ({ id, productData }, thunkAPI) => {
+    try {
+      return await updateProduct(id, productData);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// Delete Product
+export const deleteProductThunk = createAsyncThunk(
+  "product/deleteProduct",
+  async (id, thunkAPI) => {
+    try {
+      return await deleteProduct(id);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
   }
 );

@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { deleteAccountThunk, updateProfileThunk } from '../../features/user/userThunks';
-import { logout } from '../../features/user/userSlice';
-import { getUserInfoFromStorage, setUserInfoToStorage } from '../../utils/localStorage';
+import { deleteAccountThunk, updateProfileThunk, getUserProfileThunk } from '../../features/user/userThunks';
+import { logoutUser } from '../../features/user/userSlice';
+import { setUserInfoToStorage } from '../../utils/localStorage';
 import { useNavigate } from 'react-router-dom';
 import SuccessModal from '../../components/modal/SuccessModal';
 
@@ -13,23 +13,40 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalMessage, setModalMessage] = useState('')
-  const [modalError, setModalError] = useState(false) 
-  const [accountUpdating, setAccountUpdating] = useState(false);
+  const [fetchingProfile, setFetchingProfile] = useState(true);
 
- const user = useSelector((state) => state.user.userInfo)
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [location, setLocation] = useState(user?.location || '');
-  const [bio, setBio] = useState(user?.bio || '');
-  const [profileImage, setProfileImage] = useState(null);
-  const [profileImagePreview, setProfileImagePreview] = useState(user?.profileImage || '');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalError, setModalError] = useState(false);
+  const [accountUpdating, setAccountUpdating] = useState(false);
 
   const fileInputRef = useRef(null);
 
+  const user = useSelector((state) => state.user.userInfo);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [location, setLocation] = useState('');
+  const [bio, setBio] = useState('');
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState('');
+
+  // Fetch user profile on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setFetchingProfile(true);
+        await dispatch(getUserProfileThunk()).unwrap();
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
+      } finally {
+        setFetchingProfile(false);
+      }
+    };
+    fetchProfile();
+  }, [dispatch]);
+
+  // Update local state when user is available
   useEffect(() => {
     if (user) {
       setName(user.name || '');
@@ -41,6 +58,93 @@ export default function Profile() {
     }
   }, [user]);
 
+  useEffect(() => {
+    return () => {
+      if (profileImagePreview && profileImage) {
+        URL.revokeObjectURL(profileImagePreview);
+      }
+    };
+  }, [profileImagePreview, profileImage]);
+
+  const handleImageClick = () => fileInputRef.current?.click();
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(file);
+      setProfileImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleLogout = () => {
+    setLogoutLoading(true);
+    setTimeout(() => {
+      dispatch(logoutUser());
+      navigate('/signin');
+    }, 1500);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    if (!modalError && user) {
+      setEmail('');
+      navigate('/signin');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setLoading(true);
+    try {
+      await dispatch(deleteAccountThunk()).unwrap();
+      dispatch(logoutUser());
+      setModalMessage('Account Deleted successfully!');
+      setModalError(false);
+      setModalOpen(true);
+    } catch (error) {
+      setModalMessage(typeof error === 'string' ? error : error.message || 'Deletion failed');
+      setModalError(true);
+      setModalOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('email', email);
+    formData.append('phone', phone);
+    formData.append('location', location);
+    formData.append('bio', bio);
+    if (profileImage) {
+      formData.append('profileImage', profileImage);
+    }
+
+    try {
+      const updatedUser = await dispatch(updateProfileThunk(formData)).unwrap();
+      dispatch({ type: 'user/updateUserInfo', payload: updatedUser });
+      setUserInfoToStorage(updatedUser);
+      setIsEditing(false);
+      setModalMessage('User updated successfully!');
+      setModalError(false);
+      setModalOpen(true);
+    } catch (error) {
+      setModalMessage(typeof error === 'string' ? error : error.message || 'Update failed');
+      setModalError(true);
+      setModalOpen(true);
+    } finally {
+      setAccountUpdating(false);
+    }
+  };
+
+  if (fetchingProfile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="w-12 h-12 border-4 border-blue-600 border-dashed rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-700 bg-gray-100">
@@ -49,94 +153,7 @@ export default function Profile() {
     );
   }
 
-  const handleLogout = () => {
-    setLogoutLoading(true);
-    setTimeout(() => { 
-      dispatch(logout());
-      navigate('/signin');
-    }, 1500);
-  };
-
-
-
-  const handleImageClick = () => {
-    fileInputRef.current.click();
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfileImage(file);
-      setProfileImagePreview(URL.createObjectURL(file)); // <-- this line shows preview immediately
-    }
-  };
-
- const closeModal = () => {
-    setModalOpen(false)
-
-    if (!modalError && user) {
-      setEmail('')
-      navigate('/signin') // redirect again just in case
-    }
-  }
-
-  const handleDeleteAccount = async () => {
-    setLoading(true);
-    try {
-      await dispatch(deleteAccountThunk()).unwrap();
-      dispatch(logout());
-      setModalMessage('Account Deleted successfully!')
-      setModalError(false)
-      setModalOpen(true)
-      navigate('/signin');
-    } catch (error) {
-      setModalMessage(typeof error === 'string' ? error : error.message || 'Sign in failed')
-      setModalError(true)
-      setModalOpen(true)
-    } finally {
-      setLoading(false);
-    }
-  };
-
- const handleUpdateProfile = async () => {
-  const formData = new FormData();
-  formData.append('name', name);
-  formData.append('email', email);
-  formData.append('phone', phone);
-  formData.append('location', location);
-  formData.append('bio', bio);
-
-  if (profileImage) {
-    formData.append('profileImage', profileImage);
-  }
-
-  try {
-    const updatedUser = await dispatch(updateProfileThunk(formData)).unwrap();
-    setAccountUpdating(true);
-    setUserInfoToStorage(updatedUser);
-    setIsEditing(false);
-      setModalMessage('user updated successfully!')
-      setModalError(false)
-      setModalOpen(true)
-  } catch (error) { 
-  setModalMessage(typeof error === 'string' ? error : error.message || 'Sign in failed')
-      setModalError(true)
-      setModalOpen(true)
-  }finally {
-    setAccountUpdating(false);
-  }
-};
-
-useEffect(() => {
-  return () => {
-    if (profileImagePreview && profileImage) {
-      URL.revokeObjectURL(profileImagePreview);
-    }
-  };
-}, [profileImagePreview, profileImage]);
-
-
-return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 flex items-center justify-center p-6">
       <div className="max-w-4xl w-full bg-white rounded-xl shadow-xl overflow-hidden flex flex-col md:flex-row">
         {/* Left Panel */}
@@ -147,7 +164,6 @@ return (
             onClick={handleImageClick}
             className="w-32 h-32 rounded-full border-4 border-white shadow-lg mb-6 cursor-pointer"
           />
-
           <input
             type="file"
             accept="image/*"
@@ -173,61 +189,26 @@ return (
         <div className="md:w-2/3 p-8 space-y-6">
           <h3 className="text-3xl font-bold text-gray-800 mb-6">User Profile</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-500">Name</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border rounded"
-                />
-              ) : (
-                <p className="mt-1 text-gray-900 font-semibold">{name}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-500">Email Address</label>
-              {isEditing ? (
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border rounded"
-                />
-              ) : (
-                <p className="mt-1 text-gray-900 font-semibold">{email}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-500">Phone Number</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border rounded"
-                />
-              ) : (
-                <p className="mt-1 text-gray-900 font-semibold">{phone || 'N/A'}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-500">Location</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border rounded"
-                />
-              ) : (
-                <p className="mt-1 text-gray-900 font-semibold">{location || 'N/A'}</p>
-              )}
-            </div>
+            {[
+              ['Name', name, setName],
+              ['Email Address', email, setEmail],
+              ['Phone Number', phone, setPhone],
+              ['Location', location, setLocation],
+            ].map(([label, value, setter], i) => (
+              <div key={i}>
+                <label className="block text-sm font-medium text-gray-500">{label}</label>
+                {isEditing ? (
+                  <input
+                    type={label === 'Email Address' ? 'email' : 'text'}
+                    value={value}
+                    onChange={(e) => setter(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border rounded"
+                  />
+                ) : (
+                  <p className="mt-1 text-gray-900 font-semibold">{value || 'N/A'}</p>
+                )}
+              </div>
+            ))}
           </div>
 
           {/* Bio */}
@@ -255,7 +236,7 @@ return (
                   onClick={handleUpdateProfile}
                   className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                 >
-                 {accountUpdating  ? 'Saving Changes...' : 'save Changes'}
+                  {accountUpdating ? 'Saving Changes...' : 'Save Changes'}
                 </button>
                 <button
                   onClick={() => {
@@ -284,7 +265,9 @@ return (
               <button
                 onClick={handleLogout}
                 disabled={logoutLoading}
-                className={`px-6 py-2 rounded-lg text-white ${logoutLoading ? 'bg-red-400' : 'bg-red-600 hover:bg-red-700'}`}
+                className={`px-6 py-2 rounded-lg text-white ${
+                  logoutLoading ? 'bg-red-400' : 'bg-red-600 hover:bg-red-700'
+                }`}
               >
                 {logoutLoading ? 'Logging Out...' : 'Logout'}
               </button>
@@ -292,7 +275,9 @@ return (
               <button
                 onClick={handleDeleteAccount}
                 disabled={loading}
-                className={`px-6 py-2 rounded-lg text-white ${loading ? 'bg-black/50' : 'bg-black hover:bg-gray-800'}`}
+                className={`px-6 py-2 rounded-lg text-white ${
+                  loading ? 'bg-black/50' : 'bg-black hover:bg-gray-800'
+                }`}
               >
                 {loading ? 'Deleting Account...' : 'Delete Account'}
               </button>
@@ -300,7 +285,8 @@ return (
           </div>
         </div>
       </div>
-        <SuccessModal
+
+      <SuccessModal
         isOpen={modalOpen}
         onClose={closeModal}
         isError={modalError}

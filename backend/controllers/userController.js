@@ -125,17 +125,43 @@ exports.getUserProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Destructure user from req.user
+    const {
+      _id,
+      name,
+      email,
+      phone,
+      location,
+      bio,
+      profileImage,
+      role,
+      joined,
+      createdAt,
+      updatedAt,
+      isAdmin, // Note: you used role, so isAdmin might be derived
+    } = req.user;
+
     res.status(200).json({
-      id: req.user._id,
-      name: req.user.name,
-      email: req.user.email,
-      profileImage: req.user.profileImage,
-      isAdmin: req.user.isAdmin,
+      id: _id,
+      name,
+      email,
+      phone,
+      location,
+      bio,
+      profileImage,
+      role,
+      joined,
+      createdAt,
+      updatedAt,
+      // Optional: provide isAdmin flag from role
+      isAdmin: role === 'Admin',
     });
   } catch (error) {
+    console.error('Error fetching user profile:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 
 // Update logged-in user profile
@@ -211,19 +237,63 @@ exports.getAllUsers = async (req, res) => {
     const users = await User.find().select('-password'); 
     res.status(200).json(users);
   } catch (error) {
+    console.error('Error fetching users:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
 
-// Get user by ID — admin only
-exports.getUserById = async (req, res) => {
+// Edit user role by admin
+exports.editUserRole = async (req, res) => {
+  const { userId } = req.params;
+  const { role } = req.body;
+
+  const validRoles = ['User', 'Admin']; // Match enum exactly
+  if (!role || !validRoles.includes(role)) {
+    return res.status(400).json({ message: 'Invalid role value' });
+  }
+
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    res.status(200).json(user);
+    user.role = role; // use role as-is (no toLowerCase)
+    await user.save();
+
+    res.status(200).json({ message: 'User role updated successfully', user });
   } catch (error) {
+    console.error('Error updating user role:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+// Delete user by admin
+exports.deleteUserByAdmin = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    await user.deleteOne();
+
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+// Count total users
+exports.getUserCount = async (req, res) => {
+  try {
+    const count = await User.countDocuments();
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error('User count error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
