@@ -18,6 +18,7 @@ import PrivateRoute from './routes/PrivateRoute';
 import AdminRoute from './routes/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard/AdminDashboard';
 import NotFound from './pages/notFound/NotFound';
+import ProductDetails from './pages/products/productDetials';
 
 function App() {
   return (
@@ -38,6 +39,8 @@ function App() {
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/resetpassword" element={<ResetPassword />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="/product/:id" element={<ProductDetails />} />
+
         <Route path="*" element={<NotFound />} />
 
         {/* 🔐 Private Routes */}

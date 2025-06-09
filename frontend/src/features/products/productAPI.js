@@ -31,6 +31,17 @@ export const getAllProductsPublic = async (page = 1) => {
   }
 };
 
+// get single product by id
+export const getSingleProduct = async (id) => {
+  try {
+    const response = await API.get(`/products/getProduct/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching single product:", error);
+    throw error;
+  }
+};
+
 export const updateProduct = async (id, product) => {
   const headers = getAuthHeaders()
   const response = await API.put(`/products/updateProduct/${id}`, product, { headers });

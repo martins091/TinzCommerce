@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { getAllProductsPublicThunk } from '../../features/products/productThunks';
 
 const categories = ['All', 'Electronics', 'Clothing', 'Accessories', 'Books'];
@@ -8,28 +9,17 @@ const sortOptions = ['Newest', 'Price: Low to High', 'Price: High to Low', 'Best
 const Products = () => {
   const dispatch = useDispatch();
 
-  // Pagination state
   const [page, setPage] = useState(1);
-
-  // Loaded products list
   const [products, setProducts] = useState([]);
-
-  // Loading state
   const [loading, setLoading] = useState(false);
-
-  // Search, filter, and sort state
   const [searchTerm, setSearchTerm] = useState('');
   const [category, setCategory] = useState('All');
   const [sortBy, setSortBy] = useState('Newest');
 
-  // Fetch products by page, append to products list
   const fetchProducts = async (page) => {
     setLoading(true);
     try {
-      // Dispatch thunk with page param, unwrap result (adjust if your thunk returns differently)
       const response = await dispatch(getAllProductsPublicThunk(page)).unwrap();
-
-      // Append new products to existing list
       setProducts((prev) => [...prev, ...response.products]);
     } catch (error) {
       console.error('Failed to load products:', error);
@@ -38,12 +28,10 @@ const Products = () => {
     }
   };
 
-  // Load products when page changes
   useEffect(() => {
     fetchProducts(page);
   }, [page]);
 
-  // Filter and sort products client-side based on controls
   const filteredProducts = products
     .filter((product) =>
       (category === 'All' || product.category === category) &&
@@ -53,16 +41,12 @@ const Products = () => {
       if (sortBy === 'Price: Low to High') return a.price - b.price;
       if (sortBy === 'Price: High to Low') return b.price - a.price;
       if (sortBy === 'Newest') {
-        // Assuming products have createdAt or _id increasing with time
-        // If no createdAt, compare by _id string lex order
         if (a.createdAt && b.createdAt) return new Date(b.createdAt) - new Date(a.createdAt);
         return b._id.localeCompare(a._id);
       }
-      if (sortBy === 'Best Sellers') return 0; // Placeholder, no data
       return 0;
     });
 
-  // Show more loads next page
   const handleShowMore = () => {
     setPage((prev) => prev + 1);
   };
@@ -80,7 +64,6 @@ const Products = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -90,7 +73,6 @@ const Products = () => {
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
-
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
@@ -106,7 +88,8 @@ const Products = () => {
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {filteredProducts.map(({ _id, name, price, images }) => (
-            <div
+            <Link
+              to={`/product/${_id}`}
               key={_id}
               className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
             >
@@ -120,14 +103,11 @@ const Products = () => {
               <div className="p-4">
                 <h2 className="text-lg font-semibold text-gray-900 truncate">{name}</h2>
                 <p className="text-indigo-600 font-bold mt-2">${price.toFixed(2)}</p>
-                <button
-                  className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-md transition"
-                  onClick={() => alert(`Add "${name}" to cart`)}
-                >
-                  Add to Cart
-                </button>
+                <div className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-md text-center">
+                  View Details
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       ) : (

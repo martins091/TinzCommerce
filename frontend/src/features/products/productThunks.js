@@ -6,6 +6,7 @@ import {
   deleteProduct,
   getProductCountByAdmin,
   getAllProductsPublic,
+  getSingleProduct,
 } from "./productAPI";
 
 // Create Product
@@ -41,6 +42,18 @@ export const getAllProductsPublicThunk = createAsyncThunk(
   async (page = 1, thunkAPI) => {
     try {
       return await getAllProductsPublic(page);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// Get Single Product
+export const getSingleProductThunk = createAsyncThunk(
+  "product/getSingleProduct",
+  async (id, thunkAPI) => {
+    try {
+      return await getSingleProduct(id);
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }

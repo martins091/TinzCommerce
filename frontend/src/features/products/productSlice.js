@@ -6,6 +6,7 @@ import {
   deleteProductThunk,
   getProductCountByAdminThunk,
   getAllProductsPublicThunk,
+  getSingleProductThunk,
 } from './productThunks';
 
 const productSlice = createSlice({
@@ -20,10 +21,17 @@ const productSlice = createSlice({
     // 👇 Add for admin dashboard stats
     productCount: 0,
     productLoading: false,
+
+    // Add singleProduct to hold product detail data
+    singleProduct: null,
   },
   reducers: {
     setPage: (state, action) => {
       state.page = action.payload;
+    },
+    // NEW reducer to clear singleProduct
+    clearSingleProduct: (state) => {
+      state.singleProduct = null;
     },
   },
   extraReducers: (builder) => {
@@ -109,7 +117,7 @@ const productSlice = createSlice({
         state.error = action.payload;
       });
 
-    // 👇 GET PRODUCT COUNT BY ADMIN
+    // GET PRODUCT COUNT BY ADMIN
     builder
       .addCase(getProductCountByAdminThunk.pending, (state) => {
         state.productLoading = true;
@@ -123,8 +131,25 @@ const productSlice = createSlice({
         state.productLoading = false;
         state.error = action.payload;
       });
+
+    // GET SINGLE PRODUCT BY ID
+    builder
+      .addCase(getSingleProductThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.singleProduct = null;  // reset while loading
+      })
+      .addCase(getSingleProductThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.singleProduct = action.payload;
+      })
+      .addCase(getSingleProductThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.singleProduct = null;
+      });
   },
 });
 
-export const { setPage } = productSlice.actions;
+export const { setPage, clearSingleProduct } = productSlice.actions;
 export default productSlice.reducer;
