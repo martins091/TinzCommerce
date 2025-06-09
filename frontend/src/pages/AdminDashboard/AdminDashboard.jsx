@@ -1,10 +1,22 @@
-import { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import { FaUsers, FaBoxOpen, FaChartLine } from 'react-icons/fa';
+
 import ProductManagement from '../../components/products/ProductManagement';
 import UserManagement from '../../components/user/UserManagment';
 
-const data = [
+import { getProductCountByAdminThunk } from '../../features/products/productThunks';
+import { getUserCountByAdminThunk } from '../../features/user/userThunks';
+
+const chartData = [
   { name: 'Jan', users: 400, sales: 2400 },
   { name: 'Feb', users: 300, sales: 2210 },
   { name: 'Mar', users: 500, sales: 2290 },
@@ -15,6 +27,15 @@ const data = [
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
+  const dispatch = useDispatch();
+
+  const { userCount, userLoading } = useSelector((state) => state.user);
+  const { productCount, productLoading } = useSelector((state) => state.product);
+
+  useEffect(() => {
+    dispatch(getUserCountByAdminThunk());
+    dispatch(getProductCountByAdminThunk());
+  }, [dispatch]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -23,59 +44,59 @@ export default function AdminDashboard() {
 
         {/* Tabs */}
         <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-              activeTab === 'overview'
-                ? 'bg-blue-600 text-white shadow'
-                : 'bg-white text-gray-700 border border-gray-300'
-            }`}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-              activeTab === 'users'
-                ? 'bg-blue-600 text-white shadow'
-                : 'bg-white text-gray-700 border border-gray-300'
-            }`}
-          >
-            Users
-          </button>
-          <button
-            onClick={() => setActiveTab('products')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-              activeTab === 'products'
-                ? 'bg-blue-600 text-white shadow'
-                : 'bg-white text-gray-700 border border-gray-300'
-            }`}
-          >
-            Products
-          </button>
+          {['overview', 'users', 'products'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                activeTab === tab
+                  ? 'bg-blue-600 text-white shadow'
+                  : 'bg-white text-gray-700 border border-gray-300'
+              }`}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
         </div>
 
-        {/* Dashboard Cards */}
+        {/* Overview Cards */}
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+            {/* Users */}
             <div className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition-all">
               <div className="flex items-center space-x-4">
                 <FaUsers className="text-blue-500 text-3xl" />
                 <div>
                   <p className="text-gray-500 text-sm">Total Users</p>
-                  <h2 className="text-xl font-semibold">1,240</h2>
+                  <h2 className="text-xl font-semibold">
+                    {userLoading ? (
+                      <span className="animate-pulse text-gray-400">Loading...</span>
+                    ) : (
+                      userCount
+                    )}
+                  </h2>
                 </div>
               </div>
             </div>
+
+            {/* Products */}
             <div className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition-all">
               <div className="flex items-center space-x-4">
                 <FaBoxOpen className="text-green-500 text-3xl" />
                 <div>
                   <p className="text-gray-500 text-sm">Products</p>
-                  <h2 className="text-xl font-semibold">320</h2>
+                  <h2 className="text-xl font-semibold">
+                    {productLoading ? (
+                      <span className="animate-pulse text-gray-400">Loading...</span>
+                    ) : (
+                      productCount
+                    )}
+                  </h2>
                 </div>
               </div>
             </div>
+
+            {/* Sales */}
             <div className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition-all">
               <div className="flex items-center space-x-4">
                 <FaChartLine className="text-purple-500 text-3xl" />
@@ -88,12 +109,12 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Chart Section */}
+        {/* Chart */}
         {activeTab === 'overview' && (
           <div className="bg-white p-6 rounded-2xl shadow">
             <h3 className="text-lg font-semibold mb-4 text-gray-700">User & Sales Statistics</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data}>
+              <BarChart data={chartData}>
                 <XAxis dataKey="name" stroke="#8884d8" />
                 <YAxis />
                 <Tooltip />
@@ -104,12 +125,14 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Future Tabs Content */}
+        {/* Users */}
         {activeTab === 'users' && (
           <div className="bg-white p-6 rounded-2xl shadow text-gray-600">
             <UserManagement />
           </div>
         )}
+
+        {/* Products */}
         {activeTab === 'products' && (
           <div className="bg-white p-6 rounded-2xl shadow text-gray-600">
             <ProductManagement />

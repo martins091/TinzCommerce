@@ -32,7 +32,7 @@ const createProduct = async (req, res) => {
   }
 };
 
-// get all products
+// get all products by Admin
 const getAllProducts = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -54,6 +54,35 @@ const getAllProducts = async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while retrieving products',
+    });
+  }
+};
+
+// get all products for public view
+const getAllProductsPublic = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 12; // Adjust limit as needed
+    const skip = (page - 1) * limit;
+
+    const total = await Product.countDocuments();
+    const products = await Product.find({ countInStock: { $gt: 0 } })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      success: true,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalProducts: total,
+      products,
+    });
+  } catch (error) {
+    console.error('Error getting public products:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while retrieving products',
@@ -119,6 +148,7 @@ module.exports = {
   updateProduct,
   deleteProduct,
   getProductCount,
+  getAllProductsPublic,
 };
 
 

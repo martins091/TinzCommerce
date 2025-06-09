@@ -11,7 +11,8 @@ import {
   getUserProfile,
   getAllUsers,
   editUserRole,
-  deleteUserByAdmin
+  deleteUserByAdmin,
+  getUserCountByAdmin
 } from './userAPI'
 
 import {
@@ -161,6 +162,19 @@ export const deleteUserByAdminThunk = createAsyncThunk(
   async (userId, thunkAPI) => {
     try {
       const response = await deleteUserByAdmin(userId)
+      return response
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message)
+    }
+  }
+)
+
+// Get user count (admin)
+export const getUserCountByAdminThunk = createAsyncThunk(
+  'user/getUserCountByAdmin',
+  async (_, thunkAPI) => {
+    try {
+      const response = await getUserCountByAdmin()
       return response
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || error.message)

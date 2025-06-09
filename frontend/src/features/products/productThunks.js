@@ -4,6 +4,8 @@ import {
   getAllProducts,
   updateProduct,
   deleteProduct,
+  getProductCountByAdmin,
+  getAllProductsPublic,
 } from "./productAPI";
 
 // Create Product
@@ -18,7 +20,7 @@ export const createProductThunk = createAsyncThunk(
   }
 );
 
-// Get All Products
+// Get All Products by admin
 export const getAllProductsThunk = createAsyncThunk(
   "product/getAllProducts",
   async (page = 1, thunkAPI) => {
@@ -29,6 +31,18 @@ export const getAllProductsThunk = createAsyncThunk(
       const message =
         error.response?.data?.message || error.message || "Something went wrong";
       return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+//get all product by public
+export const getAllProductsPublicThunk = createAsyncThunk(
+  "product/getAllProductsPublic",
+  async (page = 1, thunkAPI) => {
+    try {
+      return await getAllProductsPublic(page);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }
   }
 );
@@ -52,6 +66,18 @@ export const deleteProductThunk = createAsyncThunk(
   async (id, thunkAPI) => {
     try {
       return await deleteProduct(id);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// Get Product Count by Admin
+export const getProductCountByAdminThunk = createAsyncThunk(
+  "product/getProductCountByAdmin",
+  async (_, thunkAPI) => {
+    try {
+      return await getProductCountByAdmin();
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
     }

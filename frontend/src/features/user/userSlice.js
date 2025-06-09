@@ -10,6 +10,7 @@ import {
   getAllUsersThunk,
   editUserRoleThunk,
   deleteUserByAdminThunk,
+  getUserCountByAdminThunk,
 } from './userThunks'
 import {
   getUserInfoFromStorage,
@@ -211,6 +212,20 @@ const userSlice = createSlice({
         state.loading = false
         state.error = action.payload
       })
+      // Get User Count (Admin)
+      .addCase(getUserCountByAdminThunk.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getUserCountByAdminThunk.fulfilled, (state, action) => {
+        state.loading = false
+        state.userCount = action.payload.count // Assuming the response has a 'count' field
+      })
+      .addCase(getUserCountByAdminThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+
   },
 })
 

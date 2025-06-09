@@ -7,6 +7,8 @@ export const createProduct = async (product) => {
   return response.data;
 }
 
+
+// get all product my admin
 export const getAllProducts = async (page = 1) => {
   try {
     const headers = getAuthHeaders(); // make sure this returns { Authorization: "Bearer <token>" }
@@ -14,6 +16,17 @@ export const getAllProducts = async (page = 1) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching products:", error);
+    throw error;
+  }
+};
+
+// get all product by public
+export const getAllProductsPublic = async (page = 1) => {
+  try {
+    const response = await API.get(`/products/getProducts/${page}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching public products:", error);
     throw error;
   }
 };
@@ -30,5 +43,12 @@ export const deleteProduct = async (id) => {
   const headers = getAuthHeaders();
   const response = await API.delete(`/products/deleteProduct/${id}`, { headers });
   console.log("Delete response:", response);
+  return response.data;
+};
+
+// get product count by admin
+export const getProductCountByAdmin = async () => {
+  const headers = getAuthHeaders();
+  const response = await API.get('/products/admin-get-products-count', { headers });
   return response.data;
 };

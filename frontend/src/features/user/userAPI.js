@@ -84,3 +84,10 @@ export const deleteUserByAdmin = async (userId) => {
   const response = await API.delete(`/users/admin-delete-user/${userId}`, { headers })
   return response.data
 }
+
+// get user count (admin)
+export const getUserCountByAdmin = async () => {
+  const headers = getAuthHeaders()
+  const response = await API.get('/users/admin-get-users-count', { headers })
+  return response.data
+}
